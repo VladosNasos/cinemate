@@ -6,6 +6,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import MovieDetailModal from "./movie-detail-modal"
 
 interface Movie {
   id: number
@@ -27,6 +28,8 @@ export default function ContentCarousel({ title, movies, hasFilters = false }: C
   const [activeFilters, setActiveFilters] = useState<string[]>([])
   const [viewMode, setViewMode] = useState<"carousel" | "grid">("carousel")
   const [currentPage, setCurrentPage] = useState(0)
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
 
   // Extract all unique genres from movies
@@ -68,6 +71,21 @@ export default function ContentCarousel({ title, movies, hasFilters = false }: C
     if (currentPage > 0) {
       setCurrentPage((prev) => prev - 1)
     }
+  }
+
+  // Handle movie selection
+  const handleMovieClick = (movie: Movie) => {
+    setSelectedMovie(movie)
+    setIsModalOpen(true)
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = "hidden"
+  }
+
+  // Handle modal close
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    // Re-enable body scrolling
+    document.body.style.overflow = "auto"
   }
 
   return (
@@ -156,9 +174,10 @@ export default function ContentCarousel({ title, movies, hasFilters = false }: C
               {filteredMovies.map((movie) => (
                 <motion.div
                   key={movie.id}
-                  className="relative aspect-video rounded-lg overflow-hidden group/item"
+                  className="relative aspect-video rounded-lg overflow-hidden group/item cursor-pointer"
                   whileHover={{ scale: 1.05, zIndex: 20 }}
                   transition={{ duration: 0.2 }}
+                  onClick={() => handleMovieClick(movie)}
                 >
                   <Image src={movie.image || "/placeholder.svg"} alt={movie.title} fill className="object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
@@ -213,7 +232,9 @@ export default function ContentCarousel({ title, movies, hasFilters = false }: C
           )}
         </div>
       )}
+
+      {/* Movie Detail Modal */}
+      <MovieDetailModal movie={selectedMovie || undefined} isOpen={isModalOpen} onClose={handleCloseModal} />
     </div>
   )
 }
-

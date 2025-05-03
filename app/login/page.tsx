@@ -83,30 +83,19 @@ export default function LoginPage() {
           px: 4,
         }}
       >
-        {/* Логотип */}
-        <Box
-          component="img"
-          src="/netflexlogo.svg"
-          alt="Cinemate Logo"
-          sx={{ width: 240, mb: 8, mt: 8 }}
-        />
 
         {/* Заголовок */}
         <MuiLink
           component="span"
           underline="none"
           variant="body1"
+          
           sx={{
             color: "#1E8E95",
             fontSize: 24,
-            fontWeight: "bold",
-            mb: 3,
-            WebkitTextStroke: "1px #000",
+            pt: 8,
+            pb: 8,
             transition: "all .3s",
-            "&:hover": {
-              color: "#24C0C9",
-              textShadow: "0 0 6px #24C0C9",
-            },
           }}
         >
           Log in

@@ -1,20 +1,60 @@
 "use client";
 import React from "react";
 import NextLink from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Box,
   Paper,
   Typography,
+  TextField,
+  InputAdornment,
+  IconButton,
   Button,
   Link as MuiLink,
-  Checkbox,
-  FormControlLabel,
 } from "@mui/material";
 
-export default function SignUpOptionsPage() {
-  const router = useRouter();
-  const [optOut, setOptOut] = React.useState(false);
+export default function LoginPage() {
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [errors, setErrors] = React.useState<{
+    email?: string;
+    password?: string;
+    general?: string;
+  }>({});
+
+  const sanitizeInput = (input: string) => input.replace(/[\${}"]/g, "");
+  const isValidEmail = (v: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.toLowerCase());
+
+  const handleTogglePassword = () => setShowPassword((f) => !f);
+
+  const handleLogin = () => {
+    const rawEmail = email.trim();
+    const rawPassword = password.trim();
+    const safeEmail = sanitizeInput(rawEmail);
+    const safePassword = sanitizeInput(rawPassword);
+    const newErrors: typeof errors = {};
+
+    if (!rawEmail) newErrors.email = "Email is required";
+    else if (!isValidEmail(rawEmail))
+      newErrors.email = "Please enter a valid email";
+
+    if (!rawPassword) newErrors.password = "Password is required";
+    else if (rawPassword.length < 6)
+      newErrors.password = "Password must be at least 6 characters";
+
+    if (rawEmail !== safeEmail || rawPassword !== safePassword)
+      newErrors.general =
+        'Input contains invalid characters. Please remove any { } " or $.';
+
+    if (Object.keys(newErrors).length === 0) {
+      newErrors.general =
+        "Wrong e-mail or password. Please try again later or use another data";
+      // здесь ваш API-запрос
+    }
+
+    setErrors(newErrors);
+  };
 
   return (
     <Box
@@ -43,139 +83,135 @@ export default function SignUpOptionsPage() {
           px: 4,
         }}
       >
-        <Typography
+        {/* Логотип */}
+        <Box
+          component="img"
+          src="/netflexlogo.svg"
+          alt="Cinemate Logo"
+          sx={{ width: 240, mb: 8, mt: 8 }}
+        />
+
+        {/* Заголовок */}
+        <MuiLink
+          component="span"
+          underline="none"
           variant="body1"
           sx={{
             color: "#1E8E95",
-            fontSize: 30,
-            fontWeight: "bold",
-            mb: 8,
+            fontSize: 24,
+            fontWeight: "falt",
+            mb: 3,
             WebkitTextStroke: "1px #000",
-            "&:hover": { color: "#24C0C9", textShadow: "0 0 6px #24C0C9" },
+            transition: "all .3s",
           }}
         >
           Create an account
-        </Typography>
+        </MuiLink>
 
-        <Button
+        {/* Ошибка */}
+        {errors.general && (
+          <Typography
+            variant="body2"
+            sx={{ color: "#EB685E", mb: 2, fontSize: 16 }}
+          >
+            {errors.general}
+          </Typography>
+        )}
+
+        {/* Поля */}
+        <TextField
           fullWidth
           variant="outlined"
-          startIcon={
-            <Box
-              component="img"
-              src="/svg/google.svg"
-              alt="Google"
-              sx={{ width: 24, height: 24 }}
-            />
-          }
+          label="E-mail"
+          type="email"
+          value={email}
+          onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setEmail(e.target.value)}
+          error={!!errors.email}
+          helperText={errors.email}
           sx={{
             mb: 3,
-            color: "#c1dad9",
-            borderColor: "#c1dad9",
-            "&:hover": { color: "#24C0C9", borderColor: "#24C0C9" },
-            textTransform: "none",
-            borderRadius: 2,
-            fontWeight: "bold",
+            "& .MuiOutlinedInput-root": {
+              color: "#fff",
+              "& fieldset": { borderColor: "#D5EBE9", borderRadius: 2 },
+              "&:hover fieldset": { borderColor: "#98C4CA" },
+            },
+            "& .MuiInputLabel-root": { color: "#98C4CA" },
+            "& .MuiFormHelperText-root": { color: "#EB685E" },
           }}
-          onClick={() => router.push("/signup/google")}
-        >
-          Continue with Google
-        </Button>
-
-        <Button
+        />
+        <TextField
           fullWidth
           variant="outlined"
-          startIcon={
-            <Box
-              component="img"
-              src="/svg/facebook.svg"
-              alt="Facebook"
-              sx={{ width: 24, height: 24 }}
-            />
-          }
-          sx={{
-            mb: 3,
-            color: "#c1dad9",
-            borderColor: "#c1dad9",
-            "&:hover": { color: "#24C0C9", borderColor: "#24C0C9" },
-            textTransform: "none",
-            borderRadius: 2,
-            fontWeight: "bold",
-          }}
-          onClick={() => router.push("/signup/facebook")}
-        >
-          Continue with Facebook
-        </Button>
-
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={
-            <Box
-              component="img"
-              src="/svg/email.svg"
-              alt="Email"
-              sx={{ width: 24, height: 24 }}
-            />
-          }
+          label="Password"
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setPassword(e.target.value)}
+          error={!!errors.password}
+          helperText={errors.password}
           sx={{
             mb: 4,
-            color: "#c1dad9",
-            borderColor: "#c1dad9",
-            "&:hover": { color: "#24C0C9", borderColor: "#24C0C9" },
-            textTransform: "none",
-            borderRadius: 2,
-            fontWeight: "bold",
+            "& .MuiOutlinedInput-root": {
+              color: "#fff",
+              "& fieldset": { borderColor: "#D5EBE9", borderRadius: 2 },
+              "&:hover fieldset": { borderColor: "#98C4CA" },
+            },
+            "& .MuiInputLabel-root": { color: "#98C4CA" },
+            "& .MuiFormHelperText-root": { color: "#EB685E" },
           }}
-          onClick={() => router.push("/signup/email")}
-        >
-          Continue with E-mail
-        </Button>
-
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={optOut}
-              onChange={() => setOptOut((v) => !v)}
-              sx={{
-                color: "#c1dad9",
-                "&.Mui-checked": { color: "#24C0C9" },
-              }}
-            />
-          }
-          label={
-            <Typography
-              sx={{ color: "#c1dad9", fontSize: 14, whiteSpace: "pre-line" }}
-            >
-              I do not wish to receive news and{`\n`}
-              promotions from Cinemate by email.
-            </Typography>
-          }
-          sx={{ mb: 3 }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={handleTogglePassword}
+                  edge="end"
+                  sx={{ color: "#fff" }}
+                >
+                  <Box
+                    component="img"
+                    src={
+                      showPassword ? "/svg/closedeye.svg" : "/svg/eye.svg"
+                    }
+                    alt="Toggle"
+                    sx={{ width: 24, height: 24 }}
+                  />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
 
-        <Typography sx={{ color: "#1E8E95", fontSize: 14, mb: 8 }}>
-          By continuing, you agree to IllustrationStock Company’s{" "}
-          <NextLink href="#" passHref>
-            <MuiLink sx={{ color: "#46C2D3", textDecoration: "underline" }}>
-              Terms of Use
-            </MuiLink>
-          </NextLink>{" "}
-          and{" "}
-          <NextLink href="#" passHref>
-            <MuiLink sx={{ color: "#46C2D3", textDecoration: "underline" }}>
-              Privacy Policy
-            </MuiLink>
-          </NextLink>
-          .
-        </Typography>
+        {/* Кнопка */}
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={handleLogin}
+          sx={{
+            mb: 2,
+            bgcolor: "#1E8E95",
+            "&:hover": { bgcolor: "#24C0C9" },
+            borderRadius: 2,
+            py: 1.5,
+            fontWeight: "bold",
+            color: "#fff",
+            textTransform: "none",
+          }}
+        >
+          Sign up
+        </Button>
 
-        <Typography sx={{ color: "#c1dad9", fontSize: 16 }}>
-          Already have an account?{" "}
-          <NextLink href="/login" passHref>
+
+
+        <Typography sx={{ color: "#fff", fontSize: 16, pt: 2 }}>
+        Already have an account?
+        {" "}
+          <NextLink href="/signup" passHref>
             <MuiLink
-              sx={{ color: "#24C0C9", fontWeight: "bold" }}
               underline="none"
+              sx={{
+                color: "#46C2D3",
+                fontWeight: "bold",
+                "&:hover": { color: "#24C0C9" },
+              }}
             >
               Log in
             </MuiLink>

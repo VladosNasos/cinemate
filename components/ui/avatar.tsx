@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 /* ────────────────────────────────────────────
    Avatar primitives – unchanged
 ──────────────────────────────────────────── */
-const Avatar = React.forwardRef<
+export const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
 >(({ className, ...props }, ref) => (
@@ -26,7 +26,7 @@ const Avatar = React.forwardRef<
 ));
 Avatar.displayName = AvatarPrimitive.Root.displayName;
 
-const AvatarImage = React.forwardRef<
+export const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
 >(({ className, ...props }, ref) => (
@@ -38,7 +38,7 @@ const AvatarImage = React.forwardRef<
 ));
 AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 
-const AvatarFallback = React.forwardRef<
+export const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
 >(({ className, ...props }, ref) => (
@@ -58,7 +58,7 @@ AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 ──────────────────────────────────────────── */
 type MenuLink = {
   type: "link";
-  to: `/${string}`; // a concrete URL string
+  to: `/${string}`;
   iconSrc: string;
   label: string;
 };
@@ -100,39 +100,43 @@ export function AvatarMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            /* ✨ exact size / colour from Figma */
             className="
               w-64 bg-[#161616]
               border border-[#60605E] 
               rounded-xl overflow-hidden z-50 shadow-lg
             "
           >
-            {/* ─── Profile header ─────────────────────── */}
-            <div className="flex items-center gap-3 px-5 py-2">
-              <Avatar className="h-10 w-10">
-                <AvatarImage
-                  src="/placeholder.svg?height=40&width=40"
-                  alt="User"
-                />
-                <AvatarFallback>N</AvatarFallback>
-              </Avatar>
-              <div className="leading-tight">
-                <p className="text-base font-semibold text-white">
-                  Nicolas Tetcher
-                </p>
-                <p className="text-sm text-gray-400">@newuser245</p>
-              </div>
-            </div>
+            {/* ─── Profile header – now a link to /account ─────────────────────── */}
+            <Popover.Close asChild>
+              <NextLink
+                href="/account"
+                className="flex items-center gap-3 px-5 py-2 hover:bg-[#1a1a1a] transition-colors"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage
+                    src="/placeholder.svg?height=40&width=40"
+                    alt="User"
+                  />
+                  <AvatarFallback>N</AvatarFallback>
+                </Avatar>
+                <div className="leading-tight">
+                  <p className="text-base font-semibold text-white">
+                    Nicolas Tetcher
+                  </p>
+                  <p className="text-sm text-gray-400">@newuser245</p>
+                </div>
+              </NextLink>
+            </Popover.Close>
 
             {/* divider between header and first item group */}
-            <div className="border-t border-[#60605E]" />  {/* ← updated */}
+            <div className="border-t border-[#60605E]" />
 
             {/* ─── Menu items ─────────────────────────── */}
             {MENU_ITEMS.map((item, i) =>
               item.type === "divider" ? (
                 <div
                   key={i}
-                  className="border-t border-[#60605E]"   /* ← updated */
+                  className="border-t border-[#60605E]"
                 />
               ) : (
                 <Popover.Close asChild key={item.to}>
@@ -147,7 +151,6 @@ export function AvatarMenu() {
                     <img
                       src={item.iconSrc}
                       alt=""
-                      /* grey by default → white on hover */
                       className="h-5 w-5 shrink-0 filter brightness-90 group-hover:brightness-200 transition"
                     />
                     <span className="text-base font-medium">
@@ -163,3 +166,4 @@ export function AvatarMenu() {
     </Popover.Root>
   );
 }
+  

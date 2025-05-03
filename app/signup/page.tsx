@@ -47,11 +47,10 @@ export default function SignUpOptionsPage() {
           variant="body1"
           sx={{
             color: "#1E8E95",
-            fontSize: 30,
+            fontSize: 16,
             fontWeight: "bold",
             mb: 8,
-            WebkitTextStroke: "1px #000",
-            "&:hover": { color: "#24C0C9", textShadow: "0 0 6px #24C0C9" },
+            pt: 14,
           }}
         >
           Create an account
