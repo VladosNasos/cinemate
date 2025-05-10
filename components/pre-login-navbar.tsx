@@ -1,18 +1,15 @@
-// src/components/navbar.tsx
+// src/components/pre-login-navbar.tsx
 
 "use client"
 
 import { useState } from "react"
 import Link from "next/link"
-import { ChevronDown, Search } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import CinemateLogo from "./cinemate-logo"
-import NotificationMenu from "./NotificationMenu"
-import { AvatarMenu } from "@/components/ui/avatar"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, color } from "framer-motion"
 import LanguageIcon from "./ui/LanguageIcon"
 
-export default function Navbar() {
-  const [searchOpen, setSearchOpen] = useState(false)
+export default function PreLoginNavBar() {
   const [langOpen, setLangOpen] = useState(false)
   const [selectedLang, setSelectedLang] = useState("English")
 
@@ -27,28 +24,6 @@ export default function Navbar() {
         </div>
 
         <div className="flex flex-1 items-center justify-end">
-          {/* Search bar */}
-          <div
-            className="relative flex items-center mr-6" 
-            onMouseEnter={() => setSearchOpen(true)}
-            onMouseLeave={() => setSearchOpen(false)}
-          >
-            <Search className="h-5 w-5 text-gray-400 cursor-pointer" />
-            <AnimatePresence>
-              {searchOpen && (
-                <motion.input
-                  type="text"
-                  placeholder="Search"
-                  autoFocus
-                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-transparent border border-gray-700 rounded-sm px-4 py-1.5 text-sm text-gray-200 placeholder:text-gray-400 focus:outline-none"
-                  initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: 500, opacity: 1 }} 
-                  exit={{ width: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                />
-              )}
-            </AnimatePresence>
-          </div>
 
           {/* Language selector */}
           <div className="relative ml-4">
@@ -87,15 +62,12 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          {/* Notifications popover */}
-          <div className="ml-6">
-            <NotificationMenu />
-          </div>
-
-          {/* Avatar with account menu */}
-          <div className="ml-6">
-            <AvatarMenu />
-          </div>
+          {/* Login button */}
+          <Link href="/login">
+            <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-sm flex items-center space-x-2 transition-colors" style={{ backgroundColor: "#1E8E95" }}>
+                Sign In
+            </button>
+          </Link>
         </div>
       </div>
     </header>
