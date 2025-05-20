@@ -3,10 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 const notifications = [
-  "New series of Stranger Things already at our website!",
-  "Saw 11 is already on our website!",
+  { text: "New series of Stranger Things already at our website!", href: "#" },
+  { text: "Saw 11 is already on our website!", href: "#" },
+  { text: "Take test to find out your preferencies!", href: "/testing" },
 ];
 
 export default function NotificationMenu() {
@@ -42,15 +44,16 @@ export default function NotificationMenu() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="absolute right-0 mt-2 w-72 bg-[#161616] border border-gray-700 rounded-lg shadow-lg overflow-hidden z-50"
           >
-            {notifications.map((note, i) => (
-              <div
-                key={i}
-                className={`px-4 py-3 text-white text-sm ${
-                  i + 1 < notifications.length ? "border-b border-gray-700" : ""
-                }`}
-              >
-                {note}
-              </div>
+            {notifications.map(({ text, href }, i) => (
+              <Link href={href} key={i}>
+                <div
+                  className={`px-4 py-3 text-white text-sm hover:bg-gray-700 transition-colors cursor-pointer ${
+                    i + 1 < notifications.length ? "border-b border-gray-700" : ""
+                  }`}
+                >
+                  {text}
+                </div>
+              </Link>
             ))}
           </motion.div>
         )}
