@@ -17,7 +17,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 const MENU_ITEMS = [
   { href: "/news",        icon: <Newspaper className="h-5 w-5" />,      label: "News" },
   { href: "/notifications", icon: <Bell className="h-5 w-5" />,         label: "Notifications" },
-  { href: "/history",     icon: <Clock className="h-5 w-5" />,          label: "Watch history" },
+  { href: "/watching-history",     icon: <Clock className="h-5 w-5" />,          label: "Watch history" },
   { divider: true },
   { href: "/account",     icon: <Settings className="h-5 w-5" />,       label: "Manage account" },
   { href: "/account/add", icon: <UserPlus className="h-5 w-5" />,       label: "Add new account" },

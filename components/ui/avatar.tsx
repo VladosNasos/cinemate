@@ -68,7 +68,7 @@ type MenuItem = MenuLink | MenuDivider;
 const MENU_ITEMS: MenuItem[] = [
   { type: "link", to: "/news",          iconSrc: "/svg/news.svg",            label: "News" },
   { type: "link", to: "/notifications", iconSrc: "/svg/notification.svg",    label: "Notifications" },
-  { type: "link", to: "/history",       iconSrc: "/svg/watch_history.svg",   label: "Watch history" },
+  { type: "link", to: "/watching-history",       iconSrc: "/svg/watch_history.svg",   label: "Watch history" },
   { type: "divider" },
   { type: "link", to: "/account",       iconSrc: "/svg/manage_account.svg",  label: "Manage account" },
   { type: "link", to: "/account/add",   iconSrc: "/svg/add_new_account.svg", label: "Add new account" },
