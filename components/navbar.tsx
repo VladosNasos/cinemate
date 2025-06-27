@@ -17,7 +17,7 @@ export default function Navbar() {
   const [selectedLang, setSelectedLang] = useState("English")
 
   return (
-    <header className="w-full fixed top-0 z-50"> 
+    <header className="w-full bg-transparent backdrop-blur-sm fixed top-0 z-50 border-b border-gray-800">
       <div className="container mx-auto flex items-center h-16 px-4">
         {/* Left: Logo */}
         <div className="flex items-center gap-8">
