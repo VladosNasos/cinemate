@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import {
   Box,
@@ -10,25 +11,29 @@ import {
   IconButton,
   Button,
   Link as MuiLink,
+  CircularProgress,
 } from "@mui/material";
+import { useAuth } from "../../context/AuthProvider"; // relative from /app/signup/email
 
-export default function LoginPage() {
+export default function SignUpEmailPage() {
+  const router = useRouter();
+  const { register } = useAuth();
+
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<{
     email?: string;
     password?: string;
     general?: string;
   }>({});
 
-  const sanitizeInput = (input: string) => input.replace(/[\${}"]/g, "");
-  const isValidEmail = (v: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.toLowerCase());
-
+  const sanitizeInput = (input: string) => input.replace(/[\${}\""]/g, "");
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.toLowerCase());
   const handleTogglePassword = () => setShowPassword((f) => !f);
 
-  const handleLogin = () => {
+  const handleSignup = async () => {
     const rawEmail = email.trim();
     const rawPassword = password.trim();
     const safeEmail = sanitizeInput(rawEmail);
@@ -36,36 +41,34 @@ export default function LoginPage() {
     const newErrors: typeof errors = {};
 
     if (!rawEmail) newErrors.email = "Email is required";
-    else if (!isValidEmail(rawEmail))
-      newErrors.email = "Please enter a valid email";
+    else if (!isValidEmail(rawEmail)) newErrors.email = "Please enter a valid email";
 
     if (!rawPassword) newErrors.password = "Password is required";
-    else if (rawPassword.length < 6)
-      newErrors.password = "Password must be at least 6 characters";
+    else if (rawPassword.length < 6) newErrors.password = "Password must be at least 6 characters";
 
-    if (rawEmail !== safeEmail || rawPassword !== safePassword)
-      newErrors.general =
-        'Input contains invalid characters. Please remove any { } " or $.';
-
-    if (Object.keys(newErrors).length === 0) {
-      newErrors.general =
-        "Wrong e-mail or password. Please try again later or use another data";
-      // здесь ваш API-запрос
+    if (rawEmail !== safeEmail || rawPassword !== safePassword) {
+      newErrors.general = 'Input contains invalid characters. Please remove any { } " or $.';
     }
 
-    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await register(rawEmail, rawPassword, rawPassword); // confirmPassword same as password field
+      router.push("/");
+    } catch (e) {
+      setErrors({ general: "E‑mail already exists or server error." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Box
-      sx={{
-        width: "100vw",
-        height: "100vh",
-        bgcolor: "#000",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
+      sx={{ width: "100vw", height: "100vh", bgcolor: "#000", display: "flex", justifyContent: "center", alignItems: "center" }}
     >
       <Paper
         elevation={4}
@@ -83,49 +86,29 @@ export default function LoginPage() {
           px: 4,
         }}
       >
-        {/* Логотип */}
-        <Box
-          component="img"
-          src="/netflexlogo.svg"
-          alt="Cinemate Logo"
-          sx={{ width: 240, mb: 8, mt: 8 }}
-        />
+        {/* Logo */}
+        <Box component="img" src="/netflexlogo.svg" alt="Cinemate Logo" sx={{ width: 240, mb: 8, mt: 8 }} />
 
-        {/* Заголовок */}
-        <MuiLink
-          component="span"
-          underline="none"
-          variant="body1"
-          sx={{
-            color: "#1E8E95",
-            fontSize: 24,
-            fontWeight: "falt",
-            mb: 3,
-            WebkitTextStroke: "1px #000",
-            transition: "all .3s",
-          }}
-        >
+        {/* Heading */}
+        <MuiLink component="span" underline="none" variant="body1" sx={{ color: "#1E8E95", fontSize: 24, mb: 3 }}>
           Create an account
         </MuiLink>
 
-        {/* Ошибка */}
+        {/* Error */}
         {errors.general && (
-          <Typography
-            variant="body2"
-            sx={{ color: "#EB685E", mb: 2, fontSize: 16 }}
-          >
+          <Typography variant="body2" sx={{ color: "#EB685E", mb: 2, fontSize: 16 }}>
             {errors.general}
           </Typography>
         )}
 
-        {/* Поля */}
+        {/* Email */}
         <TextField
           fullWidth
           variant="outlined"
           label="E-mail"
           type="email"
           value={email}
-          onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           error={!!errors.email}
           helperText={errors.email}
           sx={{
@@ -139,13 +122,15 @@ export default function LoginPage() {
             "& .MuiFormHelperText-root": { color: "#EB685E" },
           }}
         />
+
+        {/* Password */}
         <TextField
           fullWidth
           variant="outlined"
           label="Password"
           type={showPassword ? "text" : "password"}
           value={password}
-          onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           error={!!errors.password}
           helperText={errors.password}
           sx={{
@@ -161,30 +146,20 @@ export default function LoginPage() {
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <IconButton
-                  onClick={handleTogglePassword}
-                  edge="end"
-                  sx={{ color: "#fff" }}
-                >
-                  <Box
-                    component="img"
-                    src={
-                      showPassword ? "/svg/closedeye.svg" : "/svg/eye.svg"
-                    }
-                    alt="Toggle"
-                    sx={{ width: 24, height: 24 }}
-                  />
+                <IconButton onClick={handleTogglePassword} edge="end" sx={{ color: "#fff" }}>
+                  <Box component="img" src={showPassword ? "/svg/closedeye.svg" : "/svg/eye.svg"} alt="Toggle" sx={{ width: 24, height: 24 }} />
                 </IconButton>
               </InputAdornment>
             ),
           }}
         />
 
-        {/* Кнопка */}
+        {/* Submit */}
         <Button
           variant="contained"
           fullWidth
-          onClick={handleLogin}
+          disabled={loading}
+          onClick={handleSignup}
           sx={{
             mb: 2,
             bgcolor: "#1E8E95",
@@ -196,23 +171,13 @@ export default function LoginPage() {
             textTransform: "none",
           }}
         >
-          Sign up
+          {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Sign up"}
         </Button>
 
-
-
         <Typography sx={{ color: "#fff", fontSize: 16, pt: 2 }}>
-        Already have an account?
-        {" "}
-          <NextLink href="/signup" passHref>
-            <MuiLink
-              underline="none"
-              sx={{
-                color: "#46C2D3",
-                fontWeight: "bold",
-                "&:hover": { color: "#24C0C9" },
-              }}
-            >
+          Already have an account?{" "}
+          <NextLink href="/login" passHref>
+            <MuiLink underline="none" sx={{ color: "#46C2D3", fontWeight: "bold", "&:hover": { color: "#24C0C9" } }}>
               Log in
             </MuiLink>
           </NextLink>
