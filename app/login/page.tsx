@@ -204,7 +204,7 @@ export default function LoginPage() {
         </Button>
 
         {/* Links */}
-        <NextLink href="#" passHref>
+        <NextLink href="/forgot-password" passHref>
           <MuiLink underline="none" sx={{ color: "#46C2D3", fontSize: 16, mb: 4, "&:hover": { color: "#24C0C9" } }}>
             Forgot your password?
           </MuiLink>
