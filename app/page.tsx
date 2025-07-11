@@ -1,41 +1,75 @@
+import React from "react"
 import Navbar from "@/components/navbar"
 import HeroSection from "@/components/hero-section"
-import ContentCarousel from "@/components/content-carousel"
 import Footer from "@/components/footer"
+import ContentCarousel from "@/components/content-carousel"
+import { Movie } from "@/components/movie-detail-modal"
 
-export default function Home() {
-  const continueWatching = [
-    { id: 1, image: "/placeholder.svg?height=180&width=320", title: "Spider-Man", genre: "Action" },
-    { id: 2, image: "/placeholder.svg?height=180&width=320", title: "Iron Man", genre: "Action" },
-    { id: 3, image: "/placeholder.svg?height=180&width=320", title: "Doctor Strange", genre: "Sci-Fi" },
-    { id: 4, image: "/placeholder.svg?height=180&width=320", title: "Captain America", genre: "Action" },
-    { id: 5, image: "/placeholder.svg?height=180&width=320", title: "Thor", genre: "Action" },
-    { id: 6, image: "/placeholder.svg?height=180&width=320", title: "Black Widow", genre: "Action" },
-    { id: 7, image: "/placeholder.svg?height=180&width=320", title: "Hawkeye", genre: "Action" },
-    { id: 8, image: "/placeholder.svg?height=180&width=320", title: "Loki", genre: "Sci-Fi" },
-  ]
+/* ------------------------------------------------------------
+   Базовый URL бэкенда (без /api/v1 — добавим ниже)
+-------------------------------------------------------------*/
+const API_ROOT =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/api\/v1$/i, "") ||
+  "http://cinemate.ddns.net:8081"
 
-  const recommendations = [
-    { id: 9, image: "/placeholder.svg?height=180&width=320", title: "Documentary Now!", genre: "Documentary" },
-    { id: 10, image: "/placeholder.svg?height=180&width=320", title: "Mad Max", genre: "Action" },
-    { id: 11, image: "/placeholder.svg?height=180&width=320", title: "Behind the Scenes", genre: "Documentary" },
-    { id: 12, image: "/placeholder.svg?height=180&width=320", title: "Filmmaking", genre: "Documentary" },
-    { id: 13, image: "/placeholder.svg?height=180&width=320", title: "The Crown", genre: "Drama" },
-    { id: 14, image: "/placeholder.svg?height=180&width=320", title: "Breaking Bad", genre: "Drama" },
-    { id: 15, image: "/placeholder.svg?height=180&width=320", title: "Stranger Things", genre: "Sci-Fi" },
-    { id: 16, image: "/placeholder.svg?height=180&width=320", title: "The Witcher", genre: "Fantasy" },
-  ]
+/* то, что реально возвращает /contents/random */
+interface ContentDto {
+  id: number
+  name: string
+  contentType: string
+  posterUrl: string
+  trailerUrl?: string
+  videoUrl?: string
+  description?: string
+  durationMin?: number
+  ageRating?: string
+  releaseDate?: string
+  actors?: number[]
+  genres?: number[]
+  warnings?: number[]
+  rating?: number
+}
 
-  const detectives = [
-    { id: 17, image: "/placeholder.svg?height=180&width=320", title: "Sherlock", genre: "Crime" },
-    { id: 18, image: "/placeholder.svg?height=180&width=320", title: "True Detective", genre: "Crime" },
-    { id: 19, image: "/placeholder.svg?height=180&width=320", title: "Luther", genre: "Crime" },
-    { id: 20, image: "/placeholder.svg?height=180&width=320", title: "Mindhunter", genre: "Crime" },
-    { id: 21, image: "/placeholder.svg?height=180&width=320", title: "Mare of Easttown", genre: "Crime" },
-    { id: 22, image: "/placeholder.svg?height=180&width=320", title: "The Killing", genre: "Crime" },
-    { id: 23, image: "/placeholder.svg?height=180&width=320", title: "Broadchurch", genre: "Crime" },
-    { id: 24, image: "/placeholder.svg?height=180&width=320", title: "Bosch", genre: "Crime" },
-  ]
+/* ------------------------------------------------------------
+   Утилита: получаем N случайных фильмов и маппим в Movie
+-------------------------------------------------------------*/
+async function fetchRandomContents(count: number): Promise<Movie[]> {
+  const res = await fetch(`${API_ROOT}/api/v1/contents/random?count=${count}`)
+  if (!res.ok) return []
+
+  const items = (await res.json()) as ContentDto[]
+
+  return items.map((c) => ({
+    id: c.id,
+    image: c.posterUrl,
+    title: c.name,
+    description: c.description,
+    durationMin: c.durationMin,
+    ageRating: c.ageRating,
+    genre: c.contentType,
+    year: c.releaseDate
+      ? new Date(c.releaseDate).getFullYear().toString()
+      : undefined,
+    actors: c.actors,
+    genres: c.genres,
+    warnings: c.warnings,
+    rating: c.rating,
+    videoUrl: c.videoUrl,
+    trailerUrl: c.trailerUrl,
+  }))
+}
+
+/* ------------------------------------------------------------
+   Главная страница
+-------------------------------------------------------------*/
+export default async function HomePage() {
+  // три выборки параллельно
+  const [continueWatching, recommendations, detectives] =
+    await Promise.all([
+      fetchRandomContents(8),
+      fetchRandomContents(8),
+      fetchRandomContents(8),
+    ])
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -43,15 +77,24 @@ export default function Home() {
       <HeroSection />
 
       <div className="container mx-auto px-4 py-8">
-        <ContentCarousel title="Continue watching" movies={continueWatching} hasFilters={true} />
-
-        <ContentCarousel title="Recommendations for you" movies={recommendations} hasFilters={true} />
-
-        <ContentCarousel title="Top detectives of this year" movies={detectives} hasFilters={true} />
+        <ContentCarousel
+          title="Continue watching"
+          movies={continueWatching}
+          hasFilters
+        />
+        <ContentCarousel
+          title="Recommendations for you"
+          movies={recommendations}
+          hasFilters
+        />
+        <ContentCarousel
+          title="Top detectives of this year"
+          movies={detectives}
+          hasFilters
+        />
       </div>
 
       <Footer />
     </main>
   )
 }
-
