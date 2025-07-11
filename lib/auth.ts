@@ -75,3 +75,11 @@ export const resetPassword = async (
 ): Promise<void> => {
   await api.post("/auth/reset-password", body);
 };
+
+export const getTokensByState = async (state: string): Promise<AuthResult> => {
+  const { data } = await api.get<AuthResult>("/auth/tokens", {
+    params: { state },
+    headers: { disableAuth: true },
+  });
+  return data;
+};

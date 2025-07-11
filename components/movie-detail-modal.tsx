@@ -1,4 +1,4 @@
-// components/movie-detail-modal.tsx
+/* components/movie-detail-modal.tsx */
 "use client"
 
 import { useState, useEffect, Fragment } from "react"
@@ -10,10 +10,8 @@ import VideoPlayerModal from "./video-player-modal"
 import api from "@/lib/api"
 import { getEpisodes, EpisodeDto } from "@/lib/episodes"
 
-/* ---------- справочники ---------- */
-interface ActorDto   { id: number; name: string }
-interface GenreDto   { id: number; name: string }
-interface WarningDto { id: number; name: string }
+/* ─────────────────── reference dictionaries ─────────────────── */
+interface RefDto { id: number; name: string }
 
 let actorsMap:   Record<number, string> | null = null
 let genresMap:   Record<number, string> | null = null
@@ -21,40 +19,78 @@ let warningsMap: Record<number, string> | null = null
 
 async function loadRefs() {
   if (actorsMap && genresMap && warningsMap) return
-  const [actors, genres, warnings] = await Promise.all([
-    api.get<ActorDto[]>("/actors/all").then(r => r.data),
-    api.get<GenreDto[]>("/genres/all").then(r => r.data),
-    api.get<WarningDto[]>("/warnings/all").then(r => r.data),
-  ])
-  actorsMap   = Object.fromEntries(actors.map(a => [a.id, a.name]))
-  genresMap   = Object.fromEntries(genres.map(g => [g.id, g.name]))
-  warningsMap = Object.fromEntries(warnings.map(w => [w.id, w.name]))
+  try {
+    /* disableAuth – убирает Authorization, иначе бэкенд даёт 400 */
+    const opt = { headers: { disableAuth: true } } as const
+
+    const [actors, genres, warnings] = await Promise.all([
+      api.get<RefDto[]>("/actors/all",   opt).then(r => r.data),
+      api.get<RefDto[]>("/genres/all",   opt).then(r => r.data),
+      api.get<RefDto[]>("/warnings/all", opt).then(r => r.data),
+    ])
+
+    actorsMap   = Object.fromEntries(actors  .map(a => [a.id, a.name]))
+    genresMap   = Object.fromEntries(genres  .map(g => [g.id, g.name]))
+    warningsMap = Object.fromEntries(warnings.map(w => [w.id, w.name]))
+  } catch (e) {
+    console.warn("⚠️ loadRefs():", e)
+    actorsMap   = actorsMap   ?? {}
+    genresMap   = genresMap   ?? {}
+    warningsMap = warningsMap ?? {}
+  }
 }
 
-/* ---------- типы ---------- */
+/* ─────────────────── types ─────────────────── */
 export interface Movie {
   id: number
   image: string
   title: string
+
+  /* details that might be absent on first render */
   description?: string
   durationMin?: number
   ageRating?: string
   year?: string
   genre?: string
-  actors?: number[]
-  genres?: number[]
-  warnings?: number[]
   rating?: string | number
   videoUrl?: string
   trailerUrl?: string
+  contentType?: string
+
+  /* relations */
+  actors?:   number[]
+  genres?:   number[]
+  warnings?: number[]
+
+  /* names if they already came from the backend */
+  actorNames?:   string[]
+  genreNames?:   string[]
+  warningNames?: string[]
 }
 
-interface SimilarDto {
-  id: number
-  name: string
-  posterUrl: string
+interface SimilarDto { id: number; name: string; posterUrl: string }
+
+/* ─────────────────── fetch full details ─────────────────── */
+async function fetchDetails(id: number): Promise<Partial<Movie>> {
+  const { data } = await api.get(`/contents/${id}`)
+  return {
+    description:  data.description,
+    durationMin:  data.durationMin,
+    ageRating:    data.ageRating,
+    year:         data.releaseDate ? new Date(data.releaseDate).getFullYear().toString() : undefined,
+    rating:       data.rating,
+    videoUrl:     data.videoUrl,
+    trailerUrl:   data.trailerUrl,
+    actors:       data.actors?.map((a: RefDto) => a.id),
+    genres:       data.genres?.map((g: RefDto) => g.id),
+    warnings:     data.warnings?.map((w: RefDto) => w.id),
+    actorNames:   data.actors?.map((a: RefDto) => a.name),
+    genreNames:   data.genres?.map((g: RefDto) => g.name),
+    warningNames: data.warnings?.map((w: RefDto) => w.name),
+  }
 }
 
+/* ─────────────────── component ─────────────────── */
 interface Props {
   movie?: Movie
   isOpen: boolean
@@ -62,110 +98,79 @@ interface Props {
 }
 
 export default function MovieDetailModal({ movie, isOpen, onClose }: Props) {
-  /* ---------- локальный фильм (может меняться при клике на similar) ---------- */
   const [current, setCurrent] = useState<Movie | null>(movie ?? null)
   useEffect(() => setCurrent(movie ?? null), [movie])
 
   const [liked, setLiked] = useState(false)
   const [added, setAdded] = useState(false)
 
-  /* player */
   const [playerSrc, setPlayerSrc] = useState("")
-  const [isPlayerOpen, setIsPlayerOpen] = useState(false)
+  const [playerOpen, setPlayerOpen] = useState(false)
 
-  /* refs loaded? */
+  /* load dictionaries once per session */
   const [refsReady, setRefsReady] = useState(false)
+  useEffect(() => { isOpen && loadRefs().then(() => setRefsReady(true)) }, [isOpen])
 
-  /* episodes / similar */
-  const [episodes, setEpisodes] = useState<EpisodeDto[]>([])
-  const [episodesReady, setEpisodesReady] = useState(false)
-  const [similar, setSimilar]   = useState<SimilarDto[]>([])
-  const [similarReady, setSimilarReady] = useState(false)
-
-  /* ---------- refs ---------- */
-  useEffect(() => { if (isOpen) loadRefs().then(() => setRefsReady(true)) }, [isOpen])
-
-  /* ---------- load episodes then maybe similar ---------- */
+  /* lazy-load full details */
   useEffect(() => {
     if (!isOpen || !current) return
+    if (current.videoUrl || current.trailerUrl) return       // already detailed
+    fetchDetails(current.id).then(more => setCurrent(p => p ? { ...p, ...more } : p))
+  }, [isOpen, current])
 
-    console.log("Opened modal for:", current)
+  /* episodes & similar */
+  const [episodes, setEpisodes] = useState<EpisodeDto[]>([])
+  const [epsReady, setEpsReady] = useState(false)
+  const [similar, setSimilar]   = useState<SimilarDto[]>([])
+  const [simReady, setSimReady] = useState(false)
 
-    setEpisodes([]);   setEpisodesReady(false)
-    setSimilar([]);    setSimilarReady(false)
+  useEffect(() => {
+    if (!isOpen || !current) return
+    setEpisodes([]); setEpsReady(false)
+    setSimilar([]);  setSimReady(false)
 
     getEpisodes(current.id)
-      .then(eps => {
-        console.log("Episodes:", eps.length)
-        setEpisodes(eps)
-        setEpisodesReady(true)
+      .then(eps => { setEpisodes(eps); setEpsReady(true) })
+      .catch(() => setEpsReady(true))
 
-        /* если эпизодов нет — подгружаем похожие */
-        if (eps.length === 0) {
-          api.get<SimilarDto[]>("/contents/random", { params: { count: 6 } })
-            .then(r => { console.log("Similar:", r.data.length); setSimilar(r.data) })
-            .catch(e => console.error("Similar error", e))
-            .finally(() => setSimilarReady(true))
-        } else {
-          setSimilarReady(true)
-        }
-      })
-      .catch(err => {
-        console.error("Episode error", err)
-        setEpisodesReady(true)
-        /* даже при ошибке попробуем показать похожие */
-        api.get<SimilarDto[]>("/contents/random", { params: { count: 6 } })
-          .then(r => { console.log("Similar:", r.data.length); setSimilar(r.data) })
-          .catch(e => console.error("Similar error", e))
-          .finally(() => setSimilarReady(true))
-      })
+    /* random suggestions – without auth header */
+    api.get<SimilarDto[]>("/contents/random", { params: { count: 6 }, headers: { disableAuth: true } })
+       .then(r => setSimilar(r.data))
+       .finally(() => setSimReady(true))
   }, [isOpen, current])
 
   if (!isOpen || !current) return null
 
-  /* ---------- helpers ---------- */
-  const durationStr = current.durationMin
-    ? `${Math.floor(current.durationMin / 60)}h ${current.durationMin % 60}m`
-    : "—"
+  /* human-readable helpers */
+  const dur = current.durationMin ? `${Math.floor(current.durationMin / 60)}h ${current.durationMin % 60}m` : "—"
 
-  const castList = refsReady && actorsMap && current.actors
-    ? current.actors.map(id => actorsMap![id] || id).join(", ")
-    : "—"
+  const cast    = current.actorNames   ?? (refsReady && current.actors   ? current.actors  .map(id => actorsMap!  [id] ?? id).filter(Boolean) : [])
+  const genres  = current.genreNames   ?? (refsReady && current.genres   ? current.genres  .map(id => genresMap!  [id] ?? id).filter(Boolean) : [])
+  const warns   = current.warningNames ?? (refsReady && current.warnings ? current.warnings.map(id => warningsMap![id] ?? id).filter(Boolean) : [])
 
-  const genresList = refsReady && genresMap && current.genres
-    ? current.genres.map(id => genresMap![id] || id).join(", ")
-    : "—"
+  const castStr   = cast  .length ? cast  .join(", ") : "—"
+  const genresStr = genres.length ? genres.join(", ") : "—"
+  const warnStr   = warns .length ? warns .join(", ") : "None"
 
-  const warningsList = refsReady && warningsMap && current.warnings
-    ? current.warnings.map(id => warningsMap![id] || id).join(", ")
-    : "—"
+  const playSrc = current.videoUrl || current.trailerUrl || ""
 
-  const mainVideo = current.videoUrl || current.trailerUrl || ""
-
-  /* ---------- UI ---------- */
+  /* ─────────────────── UI ─────────────────── */
   return (
     <>
       <AnimatePresence>
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         >
           <div className="absolute inset-0 bg-black/80" onClick={onClose} />
 
           <motion.div
             className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-hide bg-[rgb(32,64,67)] rounded-lg shadow-xl"
-            initial={{ scale: 0.9, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 20 }}
+            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
             {/* close */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 z-10 bg-[rgb(18,17,19)] rounded-full p-1 hover:bg-[rgb(107,41,35)] transition-colors"
-            >
+            <button onClick={onClose} className="absolute top-4 right-4 z-10 bg-[rgb(18,17,19)] rounded-full p-1 hover:bg-[rgb(107,41,35)] transition-colors">
               <X className="h-6 w-6 text-[rgb(240,241,238)]" />
             </button>
 
@@ -178,29 +183,20 @@ export default function MovieDetailModal({ movie, isOpen, onClose }: Props) {
             <div className="p-8 bg-[rgb(32,64,67)]">
               {/* controls */}
               <div className="flex items-center gap-4 mb-6">
-                <Button
-                  disabled={!mainVideo}
-                  onClick={() => { setPlayerSrc(mainVideo); setIsPlayerOpen(true) }}
-                  className="flex items-center gap-2 bg-[rgb(240,241,238)] hover:bg-[rgb(240,241,238)]/90 text-[rgb(32,64,67)] disabled:opacity-40"
-                >
+                <Button disabled={!playSrc} onClick={() => { setPlayerSrc(playSrc); setPlayerOpen(true) }}
+                  className="flex items-center gap-2 bg-[rgb(240,241,238)] hover:bg-[rgb(240,241,238)]/90 text-[rgb(32,64,67)] disabled:opacity-40">
                   <Play className="h-5 w-5 fill-current" /> Play
                 </Button>
 
-                <Button
-                  variant="outline"
-                  size="icon"
+                <Button variant="outline" size="icon"
                   className={`rounded-full border-2 ${added ? "bg-[rgb(198,37,31)]/20 border-[rgb(198,37,31)]" : "bg-transparent border-[rgb(240,241,238)]/70 hover:bg-[rgb(107,41,35)]/20"}`}
-                  onClick={() => setAdded(v => !v)}
-                >
+                  onClick={() => setAdded(v => !v)}>
                   <Plus className={`h-5 w-5 ${added ? "text-[rgb(198,37,31)]" : "text-[rgb(240,241,238)]"}`} />
                 </Button>
 
-                <Button
-                  variant="outline"
-                  size="icon"
+                <Button variant="outline" size="icon"
                   className={`rounded-full border-2 ${liked ? "bg-[rgb(198,37,31)]/20 border-[rgb(198,37,31)]" : "bg-transparent border-[rgb(240,241,238)]/70 hover:bg-[rgb(107,41,35)]/20"}`}
-                  onClick={() => setLiked(v => !v)}
-                >
+                  onClick={() => setLiked(v => !v)}>
                   <ThumbsUp className={`h-5 w-5 ${liked ? "text-[rgb(198,37,31)]" : "text-[rgb(240,241,238)]"}`} />
                 </Button>
 
@@ -214,7 +210,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose }: Props) {
               {/* headline */}
               <div className="mb-6">
                 <div className="flex items-center gap-4 mb-2">
-                  <span className="text-[rgb(240,241,238)] font-medium">{durationStr}</span>
+                  <span className="text-[rgb(240,241,238)] font-medium">{dur}</span>
                   {current.year && <span className="text-[rgb(240,241,238)]/70">{current.year}</span>}
                   {current.ageRating && (
                     <span className="px-1.5 py-0.5 text-xs bg-[rgb(18,17,19)] text-[rgb(240,241,238)]/70 rounded">
@@ -234,32 +230,39 @@ export default function MovieDetailModal({ movie, isOpen, onClose }: Props) {
               {/* lists */}
               <div className="mb-8">
                 <div className="flex flex-wrap gap-x-8 text-[rgb(240,241,238)]">
-                  <div><span className="text-[rgb(240,241,238)]/70 block mb-1">Cast:</span><span>{castList}</span></div>
-                  <div><span className="text-[rgb(240,241,238)]/70 block mb-1">Genres:</span><span>{genresList}</span></div>
-                  <div><span className="text-[rgb(240,241,238)]/70 block mb-1">Warnings:</span><span>{warningsList}</span></div>
+                  <div><span className="text-[rgb(240,241,238)]/70 block mb-1">Cast:</span>{castStr}</div>
+                  <div><span className="text-[rgb(240,241,238)]/70 block mb-1">Genres:</span>{genresStr}</div>
+                  <div><span className="text-[rgb(240,241,238)]/70 block mb-1">Warnings:</span>{warnStr}</div>
                 </div>
               </div>
 
               {/* episodes OR similar */}
-              {episodesReady && episodes.length > 0 ? (
-                /* episodes */
+              {epsReady && episodes.length > 0 ? (
                 <div>
                   <h2 className="text-xl font-bold text-[rgb(240,241,238)] mb-4">Episodes</h2>
                   <div className="space-y-4">
-                    {Array.from(new Map(episodes.map(e => [e.seasonNumber, null])).keys()).map(season => (
+                    {Array.from(new Map(episodes.map(e => [e.seasonNumber, true])).keys()).map(season => (
                       <Fragment key={season}>
                         <h3 className="text-lg font-semibold text-[rgb(240,241,238)]">Season {season}</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                           {episodes.filter(e => e.seasonNumber === season).map(ep => (
                             <div key={ep.id} className="flex bg-[rgb(18,17,19)] rounded-lg overflow-hidden">
                               <div className="relative w-40 aspect-video shrink-0">
-                                <Image src={ep.thumbnailUrl || "/placeholder.svg"} alt={ep.title} fill className="object-cover"/>
+                                <Image
+                                  src={ep.thumbnailUrl || "/placeholder.svg"}
+                                  alt={ep.title || `Episode ${ep.episodeNumber}`}
+                                  fill
+                                  className="object-cover"
+                                />
                               </div>
                               <div className="flex flex-1 flex-col p-3">
                                 <div className="flex items-start justify-between mb-1 gap-2">
-                                  <span className="font-medium text-[rgb(240,241,238)]">E{ep.episodeNumber}. {ep.title}</span>
-                                  <Button variant="ghost" size="icon" className="shrink-0 h-7 w-7 hover:bg-[rgb(107,41,35)]/20"
-                                    onClick={() => { setPlayerSrc(ep.videoUrl); setIsPlayerOpen(true) }}>
+                                  <span className="font-medium text-[rgb(240,241,238)]">
+                                    E{ep.episodeNumber}. {ep.title}
+                                  </span>
+                                  <Button variant="ghost" size="icon"
+                                    className="shrink-0 h-7 w-7 hover:bg-[rgb(107,41,35)]/20"
+                                    onClick={() => { setPlayerSrc(ep.videoUrl); setPlayerOpen(true) }}>
                                     <Play className="h-4 w-4 text-[rgb(240,241,238)]" />
                                   </Button>
                                 </div>
@@ -274,24 +277,20 @@ export default function MovieDetailModal({ movie, isOpen, onClose }: Props) {
                   </div>
                 </div>
               ) : (
-                /* similar */
                 <div>
                   <h2 className="text-xl font-bold text-[rgb(240,241,238)] mb-4">More like this</h2>
 
-                  {!similarReady && <p className="text-[rgb(240,241,238)]/70">Loading…</p>}
-                  {similarReady && similar.length === 0 && <p className="text-[rgb(240,241,238)]/70">No suggestions.</p>}
+                  {!simReady && <p className="text-[rgb(240,241,238)]/70">Loading…</p>}
+                  {simReady && similar.length === 0 && <p className="text-[rgb(240,241,238)]/70">No suggestions.</p>}
 
-                  {similarReady && similar.length > 0 && (
+                  {simReady && similar.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {similar.map(sm => (
-                        <div key={sm.id} className="relative aspect-video rounded-lg overflow-hidden cursor-pointer group"
-                          onClick={() => setCurrent({
-                            id: sm.id,
-                            image: sm.posterUrl,
-                            title: sm.name,
-                          })}>
-                          <Image src={sm.posterUrl || "/placeholder.svg"} alt={sm.name} fill className="object-cover"/>
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"/>
+                        <div key={sm.id}
+                          className="relative aspect-video rounded-lg overflow-hidden cursor-pointer group"
+                          onClick={() => setCurrent({ id: sm.id, image: sm.posterUrl, title: sm.name })}>
+                          <Image src={sm.posterUrl || "/placeholder.svg"} alt={sm.name} fill className="object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-2 text-xs text-white">{sm.name}</div>
                         </div>
                       ))}
@@ -304,8 +303,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose }: Props) {
         </motion.div>
       </AnimatePresence>
 
-      {/* player */}
-      <VideoPlayerModal src={playerSrc} isOpen={isPlayerOpen} onClose={() => setIsPlayerOpen(false)} />
+      <VideoPlayerModal src={playerSrc} isOpen={playerOpen} onClose={() => setPlayerOpen(false)} contentId={current.id} />
     </>
   )
 }

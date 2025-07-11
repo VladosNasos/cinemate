@@ -55,7 +55,7 @@ export default function LoginPage() {
     else if (!isValidEmail(rawEmail)) newErrors.email = "Please enter a valid email";
 
     if (!rawPassword) newErrors.password = "Password is required";
-    else if (rawPassword.length < 6) newErrors.password = "Password must be at least 6 characters";
+    else if (rawPassword.length < 4) newErrors.password = "Password must be at least 4 characters";
 
     if (rawEmail !== safeEmail || rawPassword !== safePassword) {
       newErrors.general = 'Input contains invalid characters. Please remove any { } " or $.';
