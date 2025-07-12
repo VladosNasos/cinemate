@@ -1,9 +1,12 @@
+
+export const dynamic = 'force-dynamic' 
+
 import Navbar          from "@/components/navbar"
 import HeroSection     from "@/components/hero-section"
 import Footer          from "@/components/footer"
 import ContentCarousel from "@/components/content-carousel"
+import GenreShowcase   from "@/components/genre-showcase"
 import { Movie }       from "@/components/movie-detail-modal"
-import GenreShowcase from "@/components/genre-showcase"
 
 /* базовый адрес без /api/v1 */
 const API_ROOT =
@@ -46,7 +49,7 @@ const mapToMovie = (c: ContentDto): Movie => ({
   trailerUrl:  c.trailerUrl,
 })
 
-/* utility: маленький шалфл */
+/* utility: маленький shuffle */
 const shuffle = <T,>(arr: T[]) =>
   arr
     .map((v) => [Math.random(), v] as const)
@@ -58,8 +61,7 @@ async function fetchRandomMovies(count: number): Promise<Movie[]> {
   const res = await fetch(`${API_ROOT}/api/v1/contents/random?count=${count}`)
   if (!res.ok) return []
 
-  const movies = (await res.json() as ContentDto[])
-    .map(mapToMovie)
+  const movies = (await res.json() as ContentDto[]).map(mapToMovie)
 
   /* на случай, если бэкенд прислал дубликаты — оставляем по одному */
   const unique = new Map<number, Movie>()
@@ -75,9 +77,9 @@ async function fetchRandomMovies(count: number): Promise<Movie[]> {
   return shuffle(Array.from(unique.values())).slice(0, count)
 }
 
-/* ------------------------------------------------------ */
-/*                      Home page                         */
-/* ------------------------------------------------------ */
+/* ------------------------------------------------------
+                       Home page
+-------------------------------------------------------*/
 export default async function HomePage() {
   /* три независимые выборки, получаем параллельно  */
   const [
@@ -113,6 +115,7 @@ export default async function HomePage() {
           movies={detectives}
           hasFilters
         />
+
         <GenreShowcase />
       </div>
 

@@ -5,7 +5,7 @@ import GenreClientPage    from "./page.client"
 const API_ROOT =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/api\/v1$/i, "") ||
   "http://cinemate.ddns.net:8081"
-
+export const dynamic = 'force-dynamic'
 export async function generateStaticParams() {
   const res   = await fetch(`${API_ROOT}/api/v1/genres/all`, { next: { revalidate: 3600 } })
   const list  = res.ok ? await res.json() : []
