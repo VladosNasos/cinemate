@@ -1,5 +1,3 @@
-// src/components/pre-login-navbar.tsx
-
 "use client"
 
 import { useState } from "react"

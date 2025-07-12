@@ -20,7 +20,6 @@ let warningsMap: Record<number, string> | null = null
 async function loadRefs() {
   if (actorsMap && genresMap && warningsMap) return
   try {
-    /* disableAuth – убирает Authorization, иначе бэкенд даёт 400 */
     const opt = { headers: { disableAuth: true } } as const
 
     const [actors, genres, warnings] = await Promise.all([
@@ -46,7 +45,7 @@ export interface Movie {
   image: string
   title: string
 
-  /* details that might be absent on first render */
+
   description?: string
   durationMin?: number
   ageRating?: string
@@ -62,7 +61,7 @@ export interface Movie {
   genres?:   number[]
   warnings?: number[]
 
-  /* names if they already came from the backend */
+
   actorNames?:   string[]
   genreNames?:   string[]
   warningNames?: string[]
@@ -114,7 +113,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose }: Props) {
   /* lazy-load full details */
   useEffect(() => {
     if (!isOpen || !current) return
-    if (current.videoUrl || current.trailerUrl) return       // already detailed
+    if (current.videoUrl || current.trailerUrl) return 
     fetchDetails(current.id).then(more => setCurrent(p => p ? { ...p, ...more } : p))
   }, [isOpen, current])
 
@@ -141,7 +140,6 @@ export default function MovieDetailModal({ movie, isOpen, onClose }: Props) {
 
   if (!isOpen || !current) return null
 
-  /* human-readable helpers */
   const dur = current.durationMin ? `${Math.floor(current.durationMin / 60)}h ${current.durationMin % 60}m` : "—"
 
   const cast    = current.actorNames   ?? (refsReady && current.actors   ? current.actors  .map(id => actorsMap!  [id] ?? id).filter(Boolean) : [])

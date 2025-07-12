@@ -66,7 +66,7 @@ const COMMON_ITEMS: MenuItem[] = [
 
 /* ──────────── AvatarMenu ──────────── */
 export function AvatarMenu() {
-  const { user, logout } = useAuth()                // user === undefined ⇒ гость
+  const { user, logout } = useAuth()
   const router = useRouter()
 
   const isAuth = Boolean(user?.email)
@@ -136,8 +136,6 @@ export function AvatarMenu() {
             {/* menu */}
             {menuItems.map((item, i) => {
               if (item.type === "divider") return <div key={i} className="border-t border-[#60605E]" />
-
-              /* sign-out handled as button */
               if (item.to === "/logout")
                 return (
                   <button
