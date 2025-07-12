@@ -1,3 +1,4 @@
+/* app/signup/page.tsx */
 "use client";
 import React from "react";
 import NextLink from "next/link";
@@ -56,16 +57,12 @@ export default function SignUpOptionsPage() {
           Create an account
         </Typography>
 
+        {/* ----- OAuth / e-mail buttons ----- */}
         <Button
           fullWidth
           variant="outlined"
           startIcon={
-            <Box
-              component="img"
-              src="/svg/google.svg"
-              alt="Google"
-              sx={{ width: 24, height: 24 }}
-            />
+            <Box component="img" src="/svg/google.svg" alt="Google" sx={{ width: 24, height: 24 }} />
           }
           sx={{
             mb: 3,
@@ -85,12 +82,7 @@ export default function SignUpOptionsPage() {
           fullWidth
           variant="outlined"
           startIcon={
-            <Box
-              component="img"
-              src="/svg/facebook.svg"
-              alt="Facebook"
-              sx={{ width: 24, height: 24 }}
-            />
+            <Box component="img" src="/svg/facebook.svg" alt="Facebook" sx={{ width: 24, height: 24 }} />
           }
           sx={{
             mb: 3,
@@ -110,12 +102,7 @@ export default function SignUpOptionsPage() {
           fullWidth
           variant="outlined"
           startIcon={
-            <Box
-              component="img"
-              src="/svg/email.svg"
-              alt="Email"
-              sx={{ width: 24, height: 24 }}
-            />
+            <Box component="img" src="/svg/email.svg" alt="Email" sx={{ width: 24, height: 24 }} />
           }
           sx={{
             mb: 4,
@@ -131,54 +118,57 @@ export default function SignUpOptionsPage() {
           Continue with E-mail
         </Button>
 
+        {/* ----- opt-out checkbox ----- */}
         <FormControlLabel
           control={
             <Checkbox
               checked={optOut}
               onChange={() => setOptOut((v) => !v)}
-              sx={{
-                color: "#c1dad9",
-                "&.Mui-checked": { color: "#24C0C9" },
-              }}
+              sx={{ color: "#c1dad9", "&.Mui-checked": { color: "#24C0C9" } }}
             />
           }
           label={
-            <Typography
-              sx={{ color: "#c1dad9", fontSize: 14, whiteSpace: "pre-line" }}
-            >
-              I do not wish to receive news and{`\n`}
-              promotions from Cinemate by email.
+            <Typography sx={{ color: "#c1dad9", fontSize: 14, whiteSpace: "pre-line" }}>
+              I do not wish to receive news and{`\n`}promotions from Cinemate by email.
             </Typography>
           }
           sx={{ mb: 3 }}
         />
 
+        {/* ----- legal text with single anchors ----- */}
         <Typography sx={{ color: "#1E8E95", fontSize: 14, mb: 8 }}>
           By continuing, you agree to IllustrationStock Company’s{" "}
-          <NextLink href="#" passHref>
-            <MuiLink sx={{ color: "#46C2D3", textDecoration: "underline" }}>
-              Terms of Use
-            </MuiLink>
-          </NextLink>{" "}
+          <MuiLink
+            component={NextLink}
+            href="#"
+            sx={{ color: "#46C2D3", textDecoration: "underline" }}
+            underline="none"
+          >
+            Terms of Use
+          </MuiLink>{" "}
           and{" "}
-          <NextLink href="#" passHref>
-            <MuiLink sx={{ color: "#46C2D3", textDecoration: "underline" }}>
-              Privacy Policy
-            </MuiLink>
-          </NextLink>
+          <MuiLink
+            component={NextLink}
+            href="#"
+            sx={{ color: "#46C2D3", textDecoration: "underline" }}
+            underline="none"
+          >
+            Privacy Policy
+          </MuiLink>
           .
         </Typography>
 
+        {/* ----- login link ----- */}
         <Typography sx={{ color: "#c1dad9", fontSize: 16 }}>
           Already have an account?{" "}
-          <NextLink href="/login" passHref>
-            <MuiLink
-              sx={{ color: "#24C0C9", fontWeight: "bold" }}
-              underline="none"
-            >
-              Log in
-            </MuiLink>
-          </NextLink>
+          <MuiLink
+            component={NextLink}
+            href="/login"
+            sx={{ color: "#24C0C9", fontWeight: "bold" }}
+            underline="none"
+          >
+            Log in
+          </MuiLink>
         </Typography>
       </Paper>
     </Box>

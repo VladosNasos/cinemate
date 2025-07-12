@@ -1,4 +1,6 @@
+/* app/login/page.tsx */
 "use client";
+
 import React from "react";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
@@ -16,7 +18,7 @@ import {
 import { useAuth } from "../context/AuthProvider";
 
 // --------------------------------------------------------------------------------
-// LOGIN PAGE – wired to Cinemate auth API via AuthProvider
+// LOGIN PAGE
 // --------------------------------------------------------------------------------
 
 export default function LoginPage() {
@@ -37,7 +39,8 @@ export default function LoginPage() {
   // Helpers
   // --------------------------------------------------------------------------------
   const sanitizeInput = (input: string) => input.replace(/[\${}\""]/g, "");
-  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.toLowerCase());
+  const isValidEmail = (v: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.toLowerCase());
   const handleTogglePassword = () => setShowPassword((f) => !f);
 
   // --------------------------------------------------------------------------------
@@ -50,15 +53,18 @@ export default function LoginPage() {
     const safePassword = sanitizeInput(rawPassword);
     const newErrors: typeof errors = {};
 
-    // --- client‑side validation
+    // client-side validation
     if (!rawEmail) newErrors.email = "Email is required";
-    else if (!isValidEmail(rawEmail)) newErrors.email = "Please enter a valid email";
+    else if (!isValidEmail(rawEmail))
+      newErrors.email = "Please enter a valid email";
 
     if (!rawPassword) newErrors.password = "Password is required";
-    else if (rawPassword.length < 4) newErrors.password = "Password must be at least 4 characters";
+    else if (rawPassword.length < 4)
+      newErrors.password = "Password must be at least 4 characters";
 
     if (rawEmail !== safeEmail || rawPassword !== safePassword) {
-      newErrors.general = 'Input contains invalid characters. Please remove any { } " or $.';
+      newErrors.general =
+        'Input contains invalid characters. Please remove any { } " or $.';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -66,13 +72,13 @@ export default function LoginPage() {
       return;
     }
 
-    // --- call the API through AuthProvider
+    // call the API
     try {
       setLoading(true);
       await login(rawEmail, rawPassword);
-      router.push("/"); // landing page after successful login
-    } catch (err) {
-      setErrors({ general: "Wrong e‑mail or password. Please try again." });
+      router.push("/");
+    } catch {
+      setErrors({ general: "Wrong e-mail or password. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -113,23 +119,32 @@ export default function LoginPage() {
           component="span"
           underline="none"
           variant="body1"
-          sx={{ color: "#1E8E95", fontSize: 24, pt: 8, pb: 8, transition: "all .3s" }}
+          sx={{
+            color: "#1E8E95",
+            fontSize: 24,
+            pt: 8,
+            pb: 8,
+            transition: "all .3s",
+          }}
         >
           Log in
         </MuiLink>
 
         {/* Error */}
         {errors.general && (
-          <Typography variant="body2" sx={{ color: "#EB685E", mb: 2, fontSize: 16 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: "#EB685E", mb: 2, fontSize: 16 }}
+          >
             {errors.general}
           </Typography>
         )}
 
-        {/* Email field */}
+        {/* Email */}
         <TextField
           fullWidth
           variant="outlined"
-          label="E‑mail"
+          label="E-mail"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -147,7 +162,7 @@ export default function LoginPage() {
           }}
         />
 
-        {/* Password field */}
+        {/* Password */}
         <TextField
           fullWidth
           variant="outlined"
@@ -170,7 +185,11 @@ export default function LoginPage() {
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <IconButton onClick={handleTogglePassword} edge="end" sx={{ color: "#fff" }}>
+                <IconButton
+                  onClick={handleTogglePassword}
+                  edge="end"
+                  sx={{ color: "#fff" }}
+                >
                   <Box
                     component="img"
                     src={showPassword ? "/svg/closedeye.svg" : "/svg/eye.svg"}
@@ -183,7 +202,7 @@ export default function LoginPage() {
           }}
         />
 
-        {/* Submit button */}
+        {/* Submit */}
         <Button
           variant="contained"
           fullWidth
@@ -200,23 +219,42 @@ export default function LoginPage() {
             textTransform: "none",
           }}
         >
-          {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Log in"}
+          {loading ? (
+            <CircularProgress size={24} sx={{ color: "#fff" }} />
+          ) : (
+            "Log in"
+          )}
         </Button>
 
-        {/* Links */}
-        <NextLink href="/forgot-password" passHref>
-          <MuiLink underline="none" sx={{ color: "#46C2D3", fontSize: 16, mb: 4, "&:hover": { color: "#24C0C9" } }}>
-            Forgot your password?
-          </MuiLink>
-        </NextLink>
+        {/* Links (fixed) */}
+        <MuiLink
+          component={NextLink}
+          href="/forgot-password"
+          underline="none"
+          sx={{
+            color: "#46C2D3",
+            fontSize: 16,
+            mb: 4,
+            "&:hover": { color: "#24C0C9" },
+          }}
+        >
+          Forgot your password?
+        </MuiLink>
 
         <Typography sx={{ color: "#fff", fontSize: 16 }}>
           Don’t have an account?{" "}
-          <NextLink href="/signup" passHref>
-            <MuiLink underline="none" sx={{ color: "#46C2D3", fontWeight: "bold", "&:hover": { color: "#24C0C9" } }}>
-              Sign up
-            </MuiLink>
-          </NextLink>
+          <MuiLink
+            component={NextLink}
+            href="/signup"
+            underline="none"
+            sx={{
+              color: "#46C2D3",
+              fontWeight: "bold",
+              "&:hover": { color: "#24C0C9" },
+            }}
+          >
+            Sign up
+          </MuiLink>
         </Typography>
       </Paper>
     </Box>

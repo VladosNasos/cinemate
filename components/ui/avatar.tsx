@@ -1,14 +1,15 @@
 /* src/components/ui/avatar.tsx */
-"use client"
+"use client";
 
-import * as React from "react"
-import * as AvatarPrimitive from "@radix-ui/react-avatar"
-import * as Popover from "@radix-ui/react-popover"
-import { motion } from "framer-motion"
-import NextLink from "next/link"
-import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { useAuth } from "@/app/context/AuthProvider"
+import * as React from "react";
+import * as AvatarPrimitive from "@radix-ui/react-avatar";
+import * as Popover from "@radix-ui/react-popover";
+import { motion } from "framer-motion";
+import NextLink from "next/link";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/app/context/AuthProvider";
+import { getMyProfile, UserProfile } from "@/lib/user";
 
 /* ──────────── Avatar primitives ──────────── */
 export const Avatar = React.forwardRef<
@@ -17,19 +18,26 @@ export const Avatar = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AvatarPrimitive.Root
     ref={ref}
-    className={cn("relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full", className)}
+    className={cn(
+      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
+      className,
+    )}
     {...props}
   />
-))
-Avatar.displayName = AvatarPrimitive.Root.displayName
+));
+Avatar.displayName = AvatarPrimitive.Root.displayName;
 
 export const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
 >(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image ref={ref} className={cn("aspect-square h-full w-full", className)} {...props} />
-))
-AvatarImage.displayName = AvatarPrimitive.Image.displayName
+  <AvatarPrimitive.Image
+    ref={ref}
+    className={cn("aspect-square h-full w-full object-cover", className)}
+    {...props}
+  />
+));
+AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 
 export const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
@@ -37,39 +45,62 @@ export const AvatarFallback = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AvatarPrimitive.Fallback
     ref={ref}
-    className={cn("flex h-full w-full items-center justify-center rounded-full bg-muted", className)}
+    className={cn(
+      "flex h-full w-full items-center justify-center rounded-full bg-muted text-white text-sm font-semibold",
+      className,
+    )}
     {...props}
   />
-))
-AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
+));
+AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 
 /* ──────────── Menu items ──────────── */
 interface MenuLink {
-  type: "link"
-  to: `/${string}`
-  iconSrc: string
-  label: string
+  type: "link";
+  to: `/${string}`;
+  iconSrc: string;
+  label: string;
 }
-
 interface MenuDivider {
-  type: "divider"
+  type: "divider";
 }
-
-type MenuItem = MenuLink | MenuDivider
+type MenuItem = MenuLink | MenuDivider;
 
 const COMMON_ITEMS: MenuItem[] = [
   { type: "link", to: "/news", iconSrc: "/svg/news.svg", label: "News" },
   { type: "link", to: "/wishlist", iconSrc: "/svg/notification.svg", label: "Wish List" },
   { type: "link", to: "/watching-history", iconSrc: "/svg/watch_history.svg", label: "Watch history" },
   { type: "divider" },
-]
+];
 
 /* ──────────── AvatarMenu ──────────── */
 export function AvatarMenu() {
-  const { user, logout } = useAuth()
-  const router = useRouter()
+  const { user: authUser, logout } = useAuth();
+  const router = useRouter();
 
-  const isAuth = Boolean(user?.email)
+  const [profile, setProfile] = React.useState<UserProfile | null>(null);
+  const [imgSrc, setImgSrc]   = React.useState("/placeholder.svg?height=40&width=40");
+
+  const isAuth = Boolean(authUser?.email);
+
+  /* fetch full profile once the user is authenticated */
+  React.useEffect(() => {
+    if (!isAuth) return;                 // guest: keep defaults
+    (async () => {
+      try {
+        const p = await getMyProfile();
+        setProfile(p);
+        if (p.avatarUrl) setImgSrc(p.avatarUrl);
+      } catch {
+        /* swallow error – fallback UI already covers it */
+      }
+    })();
+  }, [isAuth]);
+
+  /* derived display data */
+  const display   = profile ? `${profile.firstName} ${profile.lastName}` : (authUser?.email ?? "Guest");
+  const handleId  = profile ? `${profile.username}` : (isAuth ? `@${authUser!.email.split("@")[0]}` : "—");
+  const fallbackC = profile ? profile.firstName[0] : (isAuth ? authUser!.email[0].toUpperCase() : "G");
 
   const menuItems: MenuItem[] = isAuth
     ? [
@@ -81,27 +112,31 @@ export function AvatarMenu() {
     : [
         ...COMMON_ITEMS,
         { type: "link", to: "/login", iconSrc: "/svg/sign_in.svg", label: "Log in" },
-      ]
+      ];
 
   const handleSignOut = async () => {
-    await logout()
-    router.push("/login")
-  }
+    await logout();
+    router.push("/login");
+  };
 
-  /* визуальные данные */
-  const avatarSrc  = "/placeholder.svg?height=40&width=40"
-  const display    = isAuth ? user!.email : "Guest"
-  const handleId   = isAuth ? `@${user!.email.split("@")[0]}` : "—"
-  const fallbackCh = isAuth ? user!.email[0].toUpperCase() : "G"
+  /* reusable avatar content */
+  const AvatarNode = (
+    <>
+      <AvatarImage
+        src={imgSrc}
+        alt="Avatar"
+        onError={() => setImgSrc("/placeholder.svg?height=40&width=40")}
+      />
+      <AvatarFallback>{fallbackC}</AvatarFallback>
+    </>
+  );
 
+  /* UI */
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
         <button className="p-1 rounded-full hover:bg-gray-800 transition-colors">
-          <Avatar>
-            <AvatarImage src={avatarSrc} alt="Avatar" />
-            <AvatarFallback>{fallbackCh}</AvatarFallback>
-          </Avatar>
+          <Avatar>{AvatarNode}</Avatar>
         </button>
       </Popover.Trigger>
 
@@ -120,10 +155,7 @@ export function AvatarMenu() {
                 href={isAuth ? "/account" : "/login"}
                 className="flex items-center gap-3 px-5 py-2 hover:bg-[#1a1a1a] transition-colors"
               >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={avatarSrc} alt="Avatar" />
-                  <AvatarFallback>{fallbackCh}</AvatarFallback>
-                </Avatar>
+                <Avatar className="h-10 w-10">{AvatarNode}</Avatar>
                 <div className="leading-tight">
                   <p className="text-base font-semibold text-white">{display}</p>
                   <p className="text-sm text-gray-400">{handleId}</p>
@@ -133,9 +165,9 @@ export function AvatarMenu() {
 
             <div className="border-t border-[#60605E]" />
 
-            {/* menu */}
+            {/* menu body */}
             {menuItems.map((item, i) => {
-              if (item.type === "divider") return <div key={i} className="border-t border-[#60605E]" />
+              if (item.type === "divider") return <div key={i} className="border-t border-[#60605E]" />;
               if (item.to === "/logout")
                 return (
                   <button
@@ -143,13 +175,17 @@ export function AvatarMenu() {
                     onClick={handleSignOut}
                     className={cn(
                       "w-full text-left group flex items-center gap-4 px-5 py-2",
-                      "text-gray-400 hover:text-white transition-colors"
+                      "text-gray-400 hover:text-white transition-colors",
                     )}
                   >
-                    <img src={item.iconSrc} alt="" className="h-5 w-5 shrink-0 filter brightness-90 group-hover:brightness-200 transition" />
+                    <img
+                      src={item.iconSrc}
+                      alt=""
+                      className="h-5 w-5 shrink-0 filter brightness-90 group-hover:brightness-200 transition"
+                    />
                     <span className="text-base font-medium">{item.label}</span>
                   </button>
-                )
+                );
 
               return (
                 <Popover.Close asChild key={item.to}>
@@ -157,18 +193,22 @@ export function AvatarMenu() {
                     href={item.to}
                     className={cn(
                       "group flex items-center gap-4 px-5 py-2",
-                      "text-gray-400 hover:text-white transition-colors"
+                      "text-gray-400 hover:text-white transition-colors",
                     )}
                   >
-                    <img src={item.iconSrc} alt="" className="h-5 w-5 shrink-0 filter brightness-90 group-hover:brightness-200 transition" />
+                    <img
+                      src={item.iconSrc}
+                      alt=""
+                      className="h-5 w-5 shrink-0 filter brightness-90 group-hover:brightness-200 transition"
+                    />
                     <span className="text-base font-medium">{item.label}</span>
                   </NextLink>
                 </Popover.Close>
-              )
+              );
             })}
           </motion.div>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
-  )
+  );
 }

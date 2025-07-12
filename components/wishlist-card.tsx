@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Play, Heart, Clock, Calendar, X } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { WishlistDto } from "./wishlist-page"
+import { WishlistDto } from "@/lib/wishlist"
 
 interface WishlistCardProps {
   item: WishlistDto
@@ -30,12 +30,15 @@ export function WishlistCard({ item, onClick, onRemove }: WishlistCardProps) {
     }
   }
 
+  /* ------ absolute posterUrl now guaranteed, but still safeguard ------ */
+  const posterSrc = item.posterUrl || "/placeholder.svg";
+
   return (
     <div className="group cursor-pointer animate-fade-in transition-transform duration-300 hover:scale-105 hover:z-10 relative">
       <div className="relative aspect-[2/3] bg-[#161616] rounded-lg overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300">
         {!imageError ? (
           <img
-            src={item.posterUrl || "/placeholder.svg"}
+            src={posterSrc}
             alt={item.contentName}
             className={`w-full h-full object-cover transition-opacity duration-300 ${
               imageLoaded ? "opacity-100" : "opacity-0"
@@ -51,7 +54,6 @@ export function WishlistCard({ item, onClick, onRemove }: WishlistCardProps) {
             </div>
           </div>
         )}
-
         {/* Remove Button */}
         <button
           onClick={(e) => {

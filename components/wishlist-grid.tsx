@@ -1,7 +1,7 @@
 "use client"
 
 import { WishlistCard } from "@/components/wishlist-card"
-import { WishlistDto } from "./wishlist-page"
+import { WishlistDto } from "@/lib/wishlist"
 
 interface WishlistGridProps {
   items: WishlistDto[]
